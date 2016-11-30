@@ -1,0 +1,8 @@
+create or replace procedure                          DEMO_ERROR_HANDDLING( p_id_works in NUMBER,p_func in VARCHAR2)
+                       is
+                          l_func varchar2(4000);
+                       Begin
+                          l_func := p_func;
+                          WWV_FLOW_API.SET_SECURITY_GROUP_ID(p_id_works);
+                          execute immediate l_func;
+                       end;

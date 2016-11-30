@@ -1,0 +1,87 @@
+create or replace procedure Gera_Despacho_Ressarcimento(vcodlancamento in number, vcodtrechopessoa in number)
+is
+
+vpessoa varchar2 (500);
+vevento varchar2 (500);
+vroteiro varchar2  (500);
+vdistancia  number;
+vvalor number;
+vressarciemnto number;
+veventoinicio date;
+veventofim  date;
+vfundamento clob;
+VCODIGORESSARC NUMBER;
+VPASSAGEMREFERENCIA NUMBER;
+VDATAINI DATE;
+VDATAFIM DATE;
+vvalorkm number;
+V_RELATORIO CLOB;
+BEGIN
+
+
+    vvalorkm :=0.93;
+    vdatafim := sysdate;  --fazer o sql para pegar as datas;
+    VPESSOA:= 'jJOAO DA SILVA';
+    /*SELECT de.descricao, de.data_inicio, de.data_fim INTO vevento, veventoinicio, veventofim 
+    FROM diarias_evento de WHERE de.codigo = (select codigo_Evento from diarias_lancamento_diarias where codigo =vcodlancamento );
+    SELECT CODIGO_RESSARCIMENTO INTO  VCODIGORESSARC FROM DIARIAS_TRECHO_RESSARCIMENTO WHERE CODIGO_TRECHO_PESSOA =vcodtrechopessoa ;
+    SELECT ROTEIRO,KILOMETRAGEM,VALOR_PASSAGEM INTO VROTEIRO, VDISTANCIA, VPASSAGEMREFERENCIA FROM DIARIAS_RESSARCIMENTO WHERE CODIGO =VCODIGORESSARC;
+	VVALOR := VDISTANCIA * vvalorkm;*/
+vvalor :=10;
+    v_relatorio := v_relatorio || 
+        '<html><head><style>h3.quebra{page-break-before:always}</style></head>
+            <body>';
+      
+    v_relatorio := v_relatorio ||
+                '<p style = "text-align: center;">
+                    <font face="Times New Roman" size="3"><b>RESSARCIMENTO DE DESPESAS</b></font><br>
+                    <font face="Times New Roman" size="3"><b>- Autorização de Pagamento  -</b></font>
+                </p>';
+    
+    select dfl.descricao into vfundamento
+    from DIARIAS_FUNDAMENTO_LEGAL dfl where data_fim is null  and rownum = 1 and tipo=2;
+                
+    v_relatorio := v_relatorio ||
+                '<p style = "text-align:relative;">
+                    <font face="Times New Roman" size="3">FUNDAMENTO: </font>
+                    <font face="Times New Roman" size="3">'||vfundamento||'</font><br>
+				 </p>';	
+					
+                    
+    
+                    
+
+                
+    v_relatorio := v_relatorio ||
+                    '<tr>
+                        <td align=center><font face="Times New Roman" size="1"><b>NOME/MATRÍCULA</b></font></td>
+                        <td align=center><font face="Times New Roman" size="1"><b>DESPESA<br>VIAGEM</b></font></td>
+                        <td align=center><font face="Times New Roman" size="1"><b>ROTEIRO</b></font></td>
+						<td align=center><font face="Times New Roman" size="1"><b>PERÍODO<br>ÚTEIS</b></font></td>
+                        <td align=center><font face="Times New Roman" size="1"><b>DISTÂNCIA<br>UNIT.</b></font></td>     
+                        <td align=center><font face="Times New Roman" size="1"><b>VALOR P/KM<br>AUX.-ALIM.</b></font></td>
+						<td align=center><font face="Times New Roman" size="1"><b>RESSARCIMENTO<br>DIÁRIAS</b></font></td>   
+                        
+                </tr>';
+	--######################################################################################################################################################################
+      
+	/* _relatorio2 := v_relatorio2 ||                  
+				'<tr>
+				<td align=center><font face="Times New Roman" size="1"><br>'||VPESSOA||'<br>'||'<br>'||'</font></td>
+				  <td align=center><font face="Times New Roman" size="1"><b>utilização de meio próprio de locomoção em viagem a serviço/<b></font></td>';
+                                <td align=center><font face="Times New Roman" size="1"><br>'||VROTEIRO||'<br>'||'<br>'||'</font></td>
+                                <td align=center><font face="Times New Roman" size="1"><br>'||vdatafim ||'<br>'||'<br>'||'</font></td>
+		                <td align=center><font face="Times New Roman" size="1"><br>'||vdistancia||'<br>'||'<br>'||'</font></td>
+						<td align=center><font face="Times New Roman" size="1"><br>'||vvalorkm||'<br>'||'<br>'||'</font></td>
+						 <td align=center><font face="Times New Roman" size="1"><br>'||vvalor||'<br>'||'<br>'||'</font></td>
+						</tr>'; 
+*/
+
+	
+		
+
+
+    htp.print(v_relatorio); 
+    
+  
+end;
