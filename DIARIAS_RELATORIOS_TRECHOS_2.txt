@@ -1,0 +1,44 @@
+create or replace FUNCTION  "DIARIAS_RELATORIOS_TRECHOS_2" 
+(vcodigoevento in NUMBER,
+vcodigoservidor in NUMBER,
+vcodigotrecho in NUMBER)
+return VARCHAR2
+is
+trechos varchar2(100);
+IATA VARCHAR2(6);
+ICAO VARCHAR2(6);
+origem number;
+destino number;
+ 
+BEGIN
+ 
+trechos := '';
+ 
+SELECT DVT.CODIGO_TERMINAL_ORIGEM, DVT.CODIGO_TERMINAL_DESTINO  
+into origem, destino
+from    DIARIAS_VIAGEM_TRECHO DVT, DIARIAS_TRECHO_PESSOA DTP, DIARIAS_LANCAMENTO_VIAGEM DLV,  DIARIAS_EVENTO DE 
+ where   DE.CODIGO = DLV.CODIGO_EVENTO  
+ and     DLV.CODIGO = DVT.CODIGO_LANCAMENTO_VIAGEM  
+ and     DVT.TIPO_VIAGEM = 1 --só usado para aéreas
+ and     DTP.CODIGO_PESSOA = vcodigoservidor
+ and     DTP.CODIGO_TRECHO = DVT.CODIGO
+ and 	 DVT.CODIGO = vcodigotrecho  
+ and     DE.CODIGO = vcodigoevento  
+ order by dvt.datahora asc;
+ 
+ 
+SELECT CODIGO_IATA, CODIGO_ICAO INTO IATA, ICAO FROM DIARIAS_TERMINAL WHERE CODIGO = origem;
+IF IATA is null then 
+        IATA := ICAO;
+end if;
+trechos := trechos || IATA; 
+ 
+SELECT CODIGO_IATA, CODIGO_ICAO INTO IATA, ICAO FROM DIARIAS_TERMINAL WHERE CODIGO = destino;
+IF IATA is null then 
+        IATA := ICAO;
+end if;
+trechos := trechos || '/' || IATA;
+  
+return trechos;
+    
+END;

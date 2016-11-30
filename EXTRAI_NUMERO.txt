@@ -1,0 +1,26 @@
+create or replace FUNCTION "EXTRAI_NUMERO" (p_texto IN VARCHAR2) RETURN NUMBER AS 
+
+texto VARCHAR2(100);
+num number := 0;
+
+BEGIN
+
+
+texto := p_texto;
+texto := substr(texto, 0, instr(texto,','));
+num := instr(texto,',') + 1;
+--htp.p ('asd'||num);
+texto := texto ||  substr(p_texto, num, 2);
+--htp.p (texto);
+--htp.p ('das' || substr(p_texto, num, 2));
+texto := replace(texto,'.', '');
+texto := replace(texto,' ', '');
+--texto := replace(texto,',', '.');
+--htp.p('qwe'||texto);
+texto := regexp_replace(texto,'[^0-9, .]', '');
+--htp.p('re'||texto);
+
+
+return (texto);
+
+END;

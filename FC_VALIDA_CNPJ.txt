@@ -1,0 +1,49 @@
+create or replace FUNCTION  "FC_VALIDA_CNPJ" (cnpj IN VARCHAR2)
+ RETURN BOOLEAN
+IS
+ digito NUMBER := 0;
+ soma NUMBER := 0;
+ cnpj_limpo VARCHAR2 (14) := TRIM (cnpj);
+BEGIN
+ IF LENGTH (cnpj_limpo) <> 14
+ THEN
+ RETURN FALSE;
+ END IF;
+ FOR i IN 1 .. 4
+ LOOP
+ soma := soma + SUBSTR (cnpj_limpo, i, 1) * (6 - i);
+ END LOOP;
+ FOR i IN 5 .. 12
+ LOOP
+ soma := soma + SUBSTR (cnpj_limpo, i, 1) * (14 - i);
+ END LOOP;
+ digito := 11 - MOD (soma, 11);
+ IF digito > 9
+ THEN
+ digito := 0;
+ END IF;
+ IF digito != SUBSTR (cnpj_limpo, 13, 1)
+ THEN
+ RETURN FALSE;
+ END IF;
+ digito := 0;
+ soma := 0;
+ FOR i IN 1 .. 5
+ LOOP
+ soma := soma + SUBSTR (cnpj_limpo, i, 1) * (7 - i);
+ END LOOP;
+ FOR i IN 6 .. 13
+ LOOP
+ soma := soma + SUBSTR (cnpj_limpo, i, 1) * (15 - i);
+ END LOOP;
+ digito := 11 - MOD (soma, 11);
+ IF digito > 9
+ THEN
+ digito := 0;
+ END IF;
+ IF digito != SUBSTR (cnpj_limpo, 14, 1)
+ THEN
+ RETURN FALSE;
+ END IF;
+ RETURN TRUE;
+END fc_valida_cnpj;

@@ -1,0 +1,17 @@
+create or replace function "DIARIAS_UNIDADE_POR_SIGLA"
+(VSIGLA in VARCHAR2)
+return NUMBER
+is
+codnumb NUMBER ;
+vcodnivel number;
+vcodunisup number;
+begin
+
+select cod into  codnumb from VW_APEX_UNID_ORGANIZAC_TCU   where upper(SIGLA) = UPPER(TRIM(VSIGLA));
+ 
+ 
+
+
+RETURN codnumb;
+
+END;

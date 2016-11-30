@@ -1,0 +1,48 @@
+create or replace FUNCTION  "DIARIAS_AUXILIO_ALIMENTACAO_V2" 
+(evento number, pessoa number,vcodlanc in number)
+return number
+is
+    fim date;
+    inicio date;
+    
+    
+    data_aux date;
+    contador number;
+    dias_total number;
+    valor_aux number;
+    valor_desconto_total number :=0 ;
+    vcontferiado  NUMBER :=0;
+begin
+    SELECT DATA_INICIO_EFETIVA, DATA_FIM_EFETIVA INTO inicio, fim FROM diarias_lancamento_diarias WHERE codigo=vcodlanc;
+    
+    
+    dias_total := fim-inicio;
+    
+    for contador in 0..dias_total loop
+        data_aux := inicio;
+        
+        data_aux := data_aux + contador;
+        select  COUNT(DATA) into vcontferiado     from  VW_APEX_HIST_DIAS_SEM_EXPED      WHERE
+           to_date(data,'dd/mm/yy') = to_date(data_aux,'dd/mm/yy');
+       
+        if(to_char(data_aux,'d') <> '1' and to_char(data_aux,'d') <> '7' )then-- and vcontferiado < 1 ) then
+    
+            select valor into valor_aux from DIARIAS_HIST_AUX_ALIMENTACAO where (data_aux between data_inicio and data_fim) or (data_aux > data_inicio and data_fim is null);
+            
+            if(contador = dias_total and to_char(data_aux,'d') <> '1' and to_char(data_aux,'d') <> '7') then --and vcontferiado < 1) then
+            
+                valor_aux := valor_aux/2;
+            
+            end if;
+            --if vcontferiado < 1 then
+              valor_desconto_total := valor_desconto_total + valor_aux; 
+            --end if;
+        end if;
+        
+
+    end loop;
+return (valor_desconto_total );
+ exception
+         when others then 
+     return ( -600);          
+end;

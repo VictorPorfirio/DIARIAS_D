@@ -1,0 +1,51 @@
+create or replace FUNCTION  "DIARIAS_TOTAL" (vcodlanc in number, vtipo in number)
+return number
+IS
+ 
+/*diarias_valores_limite
+DIARIAS_VALORES_NOVA4TESTE(541,2865,941)
+/3/FC-3/406//14/04/14/18/04/14/1,5/FC-5/492/0/16/04/14/17/04/14/189,75/300
+ 
+dia uteis
+dias da funcao
+dia ini e dia fim
+ 
+VERIFICAR SE O TOTAL É MAIOR QUE O LIMITE
+ 
+*/
+   
+   vtotal number :=0;
+   vvalor number :=0;
+   vcont number :=0;
+   
+BEGIN
+-- htp.p('inicio');
+    select count(codigo) into vcont from diarias_valores_realizados where codigo_lancamento =vcodlanc and tipo_diaria =vtipo ; -- 1 nacioanl, 21 internacional
+    if vcont > 0 then
+      --  htp.p('vcon>0');        
+       select sum(valor_total) into vtotal from diarias_valores_realizados where codigo_lancamento =vcodlanc and tipo_diaria =vtipo group by codigo_lancamento;
+       --htp.p('vtotal' ||vtotal);
+       select count(codigo) into vcont from DIARIAS_VALORES_AJUSTADOS where codigo_lancamento =vcodlanc and tipo =1 ; -- 1, pagamento
+       --htp.p('vcont2' ||vcont);
+       if vcont > 0 then
+         select sum(valor) into vvalor from DIARIAS_VALORES_AJUSTADOS where codigo_lancamento =vcodlanc and tipo =1 group by codigo_lancamento;
+         vtotal := vtotal +vvalor;
+       end if; 
+       -- htp.p('vtotal2' ||vtotal);
+       select count(codigo) into vcont from DIARIAS_VALORES_AJUSTADOS where codigo_lancamento =vcodlanc and tipo =2 ; --2 devolução
+       --htp.p('vcont3' ||vcont);
+       if vcont > 0 then
+       
+         select sum(valor) into vvalor from DIARIAS_VALORES_AJUSTADOS where codigo_lancamento =vcodlanc and tipo =2 group by codigo_lancamento;
+         vtotal := vtotal -vvalor;
+         --  htp.p('vtotal100' ||vtotal);
+       end if;  
+         --htp.p('vtotal400' ||vtotal);
+    end if;  
+       --htp.p('vtotal3' ||vtotal);
+        
+    
+     
+RETURN vtotal ;
+ 
+end;

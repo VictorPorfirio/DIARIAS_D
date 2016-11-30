@@ -1,0 +1,18 @@
+create or replace FUNCTION  "POSSUI_RESSARCIMENTO2" 
+(vcodtrechopessoa in number)
+return VARCHAR2
+  IS
+ vresposta varchar2 (10);
+ vtotal number;
+BEGIN 
+ 
+
+SELECT count(CODIGO_TRECHO_PESSOA) into  vtotal  FROM DIARIAS_TRECHO_RESSARCIMENTO WHERE CODIGO_TRECHO_PESSOA=vcodtrechopessoa;
+ if vtotal >0 then
+     vresposta := 'Sim';
+else
+     vresposta := 'Não';
+end if;
+return  vresposta ;
+
+End;

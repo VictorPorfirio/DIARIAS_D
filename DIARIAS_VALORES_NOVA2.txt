@@ -1,0 +1,754 @@
+create or replace FUNCTION  "DIARIAS_VALORES_NOVA2" (vcodigo_evento IN NUMBER, vcodigo_servidor IN NUMBER)
+return VARCHAR2
+IS
+    valor_excecao1 number;
+    vcargo1 number;
+    valor_excecao2 number;
+    flag number :=0;
+    vdata2 date;
+    aux_vdata2 number:=0;
+    aux_fim date;
+    aux_fim2 date;
+    aux_inicio date;
+    aux_inicio2 date;
+    menos number:= 0;
+    mais number := 0;
+    data_inicio_pessoa date;
+    data_fim_pessoa date;
+    data_fim_altera_fc date;
+    valor_excecao number := 0;
+    total_excecao number := 0;
+   lista_matches clob;
+    l NUMBER := 0;
+    r NUMBER :=0;
+    vconta NUMBER :=1;
+    vinclui  BOOLEAN := TRUE;
+    vcargo NUMBER;
+    fcargo NUMBER;
+   fcfinal varchar2(30);
+   a varchar2(4000);
+    vdatafim DATE;
+    k NUMBER;
+    j NUMBER :=0;
+    i number := 0;
+    u NUMBER;
+    vsomatotalnormal number :=0;
+    vsomatotalalter number :=0;
+    vcontador number;
+    valordiariapadrao NUMBER;
+    vdata DATE;
+    vdatai DATE;
+    vdataf DATE;
+    vdia VARCHAR(4);
+    valimentacao NUMBER; 
+    vtaxaembarque NUMBER;
+    vsomadiautil NUMBER;
+    vtotal NUMBER;
+    vseq NUMBER;
+    valortotal NUMBER;
+    vtipodiaria NUMBER;
+    vdiainicio DATE;
+    vdiafim DATE;
+    vdiafimalter DATE;
+    vsomanormal number :=0;
+    vsomalter number :=0;
+    vtotalalter NUMBER;
+    valortotalalter NUMBER;
+    valortotalgeral NUMBER;
+    valorpadraodiaria NUMBER;
+    lista_retorno VARCHAR(500);
+    novalista VARCHAR(500);
+    novasomaalter NUMBER;
+    novadiasdif NUMBER := 0.5;
+    novocargo VARCHAR2(50);
+    novadiaria NUMBER;
+    somadiaalter number := 0;
+    somadia number := 0;
+    somafinal number :=0;
+    diasfinal number :=0;
+    somafc number :=0;
+    vtotaexclui number:=0;
+    vdatafinal date;
+    vtotaldias number :=0;
+    vtaxa number:= 0; 
+    vtaxatotal number := 0;
+    vpadrao varchar2 (4000);
+    vprox varchar2 (4000);
+    vcontexclui number :=0;
+    
+    type array_meias_datas is varray(1000) of number;
+    
+    TYPE vacodigoalteradorarray IS VARRAY(500) OF NUMBER;
+    TYPE vafcarray IS VARRAY(100) OF varchar2(100);
+    TYPE vacodigoalteradoarray IS VARRAY(500) OF NUMBER;
+    TYPE vadatainiarray IS VARRAY(100) OF DATE;
+    TYPE vadatafimarray IS VARRAY(100) OF DATE;
+     
+    TYPE vadatanormalarray IS VARRAY(100) OF DATE;
+    TYPE vadataalteraarray IS VARRAY(100) OF DATE;
+    TYPE vadataexcluiarray IS VARRAY(100) OF DATE;
+    TYPE vvalorpadraoarray IS VARRAY(100) OF number; 
+    TYPE vvaloraltarray IS VARRAY(100) OF number; 
+ 
+   TYPE diarias_tipo IS RECORD (
+    vdias  number,
+    vfc     number,
+    vdiaexclui number,
+    vdataini date,
+    vdatafim date
+  );
+  
+   
+  TYPE  vdiarias_tipo IS TABLE OF diarias_tipo
+      INDEX BY varchar2(30);
+ 
+    vdiariastipo vdiarias_tipo;
+    
+    aux diarias_tipo;
+    
+    meias_datas array_meias_datas;
+    
+    vafc vafcarray;
+    vafcimp vafcarray;
+    vdiasimp vafcarray;
+    vvalorimp vvaloraltarray;
+    
+    diasdifalt vafcarray;
+    diasdif vafcarray;
+    vafcalt vafcarray;
+    vacodigoalterado  vacodigoalteradoarray;
+    vacodigoalterador vacodigoalteradoarray;
+    vadataini  vadatainiarray;
+    vadatafim vadatafimarray;
+    vvalorpadrao vvalorpadraoarray ;
+    vvaloralt    vvaloraltarray;
+    
+    vadatanormal vadatanormalarray;
+    vadataaltera  vadatanormalarray;
+    vadataexclui vadataexcluiarray;
+    vauxaliment number := 0;  
+    vtotalauxaliment number := 0; 
+    novadiadif NUMBER;
+    diaini DATE;
+    diafim DATE;
+    vvalor number;
+    vsaida  VARCHAR (4000);
+    vdatainiefet date;
+    vdatafimefet date;
+    vexcluidiautil NUMBER;
+   totalgeral number;
+   totalexclui number :=0; 
+  
+ 
+BEGIN
+ 
+lista_matches := 'primeiro cursor e variáveis';
+  
+k := 0;
+novasomaalter := 0;
+valordiariapadrao :=0;
+vsomadiautil := 0;
+valortotal := 0;
+vtotalalter := 0;
+valortotalalter := 0;
+u := 0;
+meias_datas := array_meias_datas();
+vafc := vafcarray();
+vafcimp := vafcarray();
+vdiasimp := vafcarray();
+vvalorimp:= vvaloraltarray();
+ 
+ 
+vafcalt := vafcarray();
+diasdifalt :=vafcarray();
+diasdif :=vafcarray();
+vvalorpadrao:= vvalorpadraoarray();
+vvaloralt  := vvaloraltarray();
+vacodigoalterado :=vacodigoalteradoarray();
+vacodigoalterador :=vacodigoalteradoarray();
+vadataini := vadatainiarray ();
+vadatafim := vadatafimarray ();
+vadatanormal := vadatanormalarray();
+vadataaltera := vadatanormalarray();
+vadataexclui := vadataexcluiarray();
+vexcluidiautil := 0;
+vadatanormal.extend(100);
+vadataexclui.extend(100);
+vadataaltera.extend(100);
+meias_datas.extend(1000);
+vafc.extend(100);
+vafcalt.extend(100);
+diasdifalt.extend(100);
+diasdif.extend(100); 
+vvalorpadrao.extend(100);
+vvaloralt.extend(100);  
+vacodigoalterado.extend(100); 
+vacodigoalterador.extend(100); 
+vadataini.extend(100); 
+vadatafim.extend(100); 
+ 
+vafcimp.extend(100);
+vdiasimp.extend(100); 
+vvalorimp.extend(100);
+ 
+ 
+           
+for z in
+(
+select  data_alteracao  from
+DIARIAS_EXCECAO
+where codigo_lancamento in (select codigo from DIARIAS_lancamento_diarias  where codigo_evento = vcodigo_evento  and
+    codigo_pessoa = vcodigo_servidor ) order by data_alteracao asc
+ 
+)
+ loop 
+ 
+ select DATA_INICIO_EFETIVA into vdataf from diarias_lancamento_diarias where codigo_evento = vcodigo_evento  and
+    codigo_pessoa = vcodigo_servidor;
+ 
+ 
+  vcontexclui:= to_number(z.data_alteracao - vdataf + 1);
+  vadataexclui (vcontexclui) := to_char(z.data_alteracao,'dd-mon-yyyy');
+  
+  --htp.p(vcontexclui || ' ' || vadataexclui (vcontexclui) || '</font><br>');
+ 
+  if to_char(z.data_alteracao,'D') <> '1' and  to_char(z.data_alteracao,'D')  <> '7' then
+    vexcluidiautil := vexcluidiautil +1;
+             
+  end if;
+  
+ 
+  
+end loop;         
+           
+           
+           
+ 
+i := 0;
+for x in(
+     SELECT dl.codigo codigo_lanc, dl.cod_cargo, dc.cargo,
+     case 
+        when Initcap(dc.cargo) = Initcap('Ministro') then '11'
+        when Initcap(dc.cargo) = Initcap('Ministro-Substituto') then '9'
+        when Initcap(dc.cargo) = Initcap('Procurador-Geral') then '10'
+        when Initcap(dc.cargo) = Initcap('Procurador') then '8'
+        when Initcap(dc.cargo) = Initcap('Subprocurador-Geral') then '7' 
+        else SUBSTR(dc.cargo,4,1) 
+     end AS Funcao,
+     dl.codigo_pessoa, dl.DATA_INICIO_EFETIVA inicio, case when hd.data_fim is null then dl.DATA_FIM_EFETIVA else (case when  hd.data_fim < dl.DATA_FIM_EFETIVA then hd.data_fim else dl.data_fim_Efetiva end)  end fim ,  dl.cod_autoridade_acompanhada, dl.codigo_evento, hd.valor valor_diaria, hd.data_inicio inicio_diaria, hd.data_fim fim_diaria, 
+     TO_NUMBER((dl.DATA_FIM_EFETIVA - dl.DATA_INICIO_EFETIVA) + 0.5) diasdif
+     FROM DIARIAS_lancamento_diarias  dl, DIARIAS_TIPO_DIARIA td, DIARIAS_HIST_VALOR_DIARIA hd, diarias_cargo dc
+     WHERE dl.codigo_evento = vcodigo_evento AND
+     dl.codigo_pessoa = vcodigo_servidor AND
+     hd.codigo_cargo = dl.cod_cargo AND
+     -- hd.codigo_cargo =dl.cod_cargo and
+     hd.codigo_tipo = dl.cod_tipo and
+     td.codigo = hd.codigo_tipo AND
+     ( 
+       to_date(dl.DATA_inicio_EFETIVA,'dd/mm/yyyy') BETWEEN to_date(hd.data_inicio,'dd/mm/yyyy')  AND to_date(hd.data_fim,'dd/mm/yyyy')
+       and to_date(dl.DATA_fim_EFETIVA,'dd/mm/yyyy') BETWEEN to_date(hd.data_inicio,'dd/mm/yyyy')  AND to_date(hd.data_fim,'dd/mm/yyyy')  
+       or to_date(dl.DATA_FIM_EFETIVA,'dd/mm/yyyy') >= to_date(hd.data_inicio,'dd/mm/yyyy')   AND  hd.data_fim is null  
+         
+         
+                           ) and
+                                     dc.codigo = hd.codigo_cargo and
+        hd.codigo_tipo = dl.cod_tipo
+                              ORDER BY Funcao desc
+ 
+)
+ 
+ loop
+  
+  
+ 
+if x.COD_AUTORIDADE_ACOMPANHADA is not null then
+      exit;
+      
+  
+end if;
+    data_inicio_pessoa := x.inicio;   
+    data_fim_pessoa := x.fim;
+ 
+  if vdata is null then   
+     vdata:=x.inicio;
+    
+   end if;
+  
+    
+     select to_char (vdata, 'D') into vdia from dual;
+     case
+       
+        when  vdia <> '1' and  vdia <> '7' then
+            vsomadiautil := vsomadiautil + 1;
+                           
+       else
+            lista_matches := (' fim de semana ');        
+            lista_matches :=('______________________'); 
+ 
+            
+     end  case;
+ 
+    vsomatotalnormal := x.valor_diaria;
+ 
+ 
+     vvalor := x.valor_diaria;
+   
+    somadia := somadia +1;
+    vdata:=vdata +1;
+ 
+    
+   vdatafinal := x.fim;
+ 
+   vsomadiautil :=  vsomadiautil - vexcluidiautil;
+   novadiaria := x.valor_diaria ;      
+   novocargo:= x.CARGO;
+   novadiasdif :=x.diasdif;
+   diaini := x.inicio;  
+   diafim := x.fim;
+   vsomadiautil :=  vsomadiautil + 0.5;
+ 
+ 
+   vtotal :=  x.fim - x.inicio + 0.5;
+   vdiainicio := x.inicio;
+   vdiafim :=x.fim;
+ 
+ if vdatainiefet is null then
+     vdatainiefet := x.inicio;  
+ end if;
+vdatafimefet := x.fim;
+ 
+select   DIARIAS_AUXILIO_ALIMENTACAO (vdatainiefet,vdatafimefet) into  vauxaliment from dual;
+vtotalauxaliment :=  vtotalauxaliment +   vauxaliment;
+ 
+ 
+WHILE vdatainiefet <= vdatafimefet
+LOOP
+    l:= l +1;   
+ 
+    /*if(vdatainiefet = vdatafimefet) then
+        --aux_vdata2 := to_number(l);
+        meias_datas(l) := 0.5;
+    else
+        --aux_vdata2 := to_number(l);
+        meias_datas(l) := 1.0;
+    end if;    
+    
+    htp.p( meias_datas(l) ||  '</font><br>');*/
+    
+   vadatanormal(l) := vdatainiefet;
+   vvalorpadrao (l) := x.valor_diaria; 
+   vafc(l) := x.cargo;
+   vdatainiefet := vdatainiefet +1;
+   
+   
+   
+END LOOP;
+ 
+vdata2 := x.inicio;
+ 
+while vdata2 <= x.fim
+loop
+    
+    if(vdata2 = x.fim) then
+        aux_vdata2 := to_number((vdata2-x.inicio)+1);
+        meias_datas(aux_vdata2) := 0.5;
+    else
+        aux_vdata2 := to_number((vdata2-x.inicio)+1);
+        meias_datas(aux_vdata2) := 1.0;
+    end if;    
+    
+    --htp.p( meias_datas(aux_vdata2) ||  '</font><br>');
+    
+    vdata2 := vdata2 + 1;
+ 
+end loop;
+ 
+vdata2 := x.inicio;
+ 
+ vdatafinal :=x.fim;
+ vdiariastipo(x.cargo).vdias := to_number(x.diasdif);
+ --htp.p(vdiariastipo(x.cargo).vdias || '</font><br>');
+ vdiariastipo(x.cargo).vfc := x.valor_diaria;
+ vdiariastipo(x.cargo).vdataini := x.inicio;
+ vdiariastipo(x.cargo).vdatafim := x.fim;
+ 
+ 
+ 
+ vdata:= x.inicio;
+ 
+ aux_fim:= x.inicio-1;
+ aux_fim2:= x.inicio-1;
+ --vdiariastipo(x.cargo).vdiaexclui  := total_excecao ;
+ 
+ --vconta:=1;
+-- total_excecao := 0;
+  --htp.p(x.cargo ||  '</font><br>');
+ 
+  --htp.p(vdiariastipo(x.cargo).vdataini || ' ' || vdiariastipo(x.cargo).vdatafim || ' ' || vdiariastipo(x.cargo).vdias || ' ' || x.cargo || '</font><br>' );
+ 
+end loop;
+select DIARIAS_TAXA_EMBARQUE(diaini,diafim,21) into   vtaxa from dual;
+vtaxatotal := vtaxatotal + vtaxa;
+ 
+ select CODIGO into vcargo from DIARIAS_LANCAMENTO_DIARIAS where CODIGO_EVENTO = vcodigo_evento and CODIGO_PESSOA = vcodigo_servidor;
+ 
+--htp.p(vcargo);
+ 
+for i in
+  (
+ 
+   SELECT dl.codigo, dl.DATA_FIM_EFETIVA fim_efetivo, dl.DATA_INICIO_EFETIVA inicio_efetivo, dl.cod_cargo,dc.cargo,
+   case 
+        when Initcap(dc.cargo) = Initcap('Ministro') then '11'
+        when Initcap(dc.cargo) = Initcap('Ministro-Substituto') then '9'
+        when Initcap(dc.cargo) = Initcap('Procurador-Geral') then '10'
+        when Initcap(dc.cargo) = Initcap('Procurador') then '8'
+        when Initcap(dc.cargo) = Initcap('Subprocurador-Geral') then '7' 
+        else SUBSTR(dc.cargo,4,1) 
+     end AS Funcao,
+   dl.codigo_pessoa, da.data_inicio inicio, da.data_fim fim, case when to_number(da.data_fim - da.data_inicio + 0.5 ) = 0.5 then 0.5  else  to_number(da.data_fim - da.data_inicio + 0.5 ) end dias_dif,
+    dl.cod_autoridade_acompanhada, dl.codigo_evento,
+    hd.valor valor_diaria, hd.data_inicio inicio_diaria, hd.data_fim  fim_diaria 
+    FROM DIARIAS_lancamento_diarias  dl, DIARIAS_ALTERACAO DA,DIARIAS_TIPO_DIARIA td, DIARIAS_HIST_VALOR_DIARIA hd, diarias_cargo dc
+    WHERE 
+    da.CODIGO_LANCAMENTO_MODIFICADOR = dl.codigo and
+    hd.codigo_cargo = dl.cod_cargo and
+    td.codigo = hd.codigo_tipo and
+    dl.codigo_evento = vcodigo_evento and
+    da.CODIGO_LANCAMENTO_MODIFICADO  =(select codigo from DIARIAS_LANCAMENTO_DIARIAS where codigo_evento = vcodigo_evento and codigo_pessoa = vcodigo_servidor) and
+    dc.codigo = hd.codigo_cargo and
+     (
+      
+     to_date(dl.DATA_inicio_EFETIVA,'dd/mm/yyyy') BETWEEN to_date(hd.data_inicio,'dd/mm/yyyy')  AND to_date(hd.data_fim,'dd/mm/yyyy')
+     and to_date(dl.DATA_fim_EFETIVA,'dd/mm/yyyy') BETWEEN to_date(hd.data_inicio,'dd/mm/yyyy')  AND to_date(hd.data_fim,'dd/mm/yyyy')  
+     or to_date(dl.DATA_FIM_EFETIVA,'dd/mm/yyyy') >= to_date(hd.data_inicio,'dd/mm/yyyy')   AND  hd.data_fim is null   
+       
+   )    and  
+    
+    hd.codigo_tipo = dl.cod_tipo
+    order by Funcao desc
+   
+     )
+ 
+   loop
+ 
+       vdata :=i.inicio;
+       somadiaalter:=0;
+       vsomatotalalter :=0;
+       vdataf := i.fim;
+       menos := 0;
+       mais := 0;
+ 
+        --htp.p( i.cargo || ' ' || vdata || ' ' || vdataf || '</font><br>');
+ 
+      loop
+        exit when to_char(vdata,'mm/dd/yyyy') >  to_char(vdataf,'mm/dd/yyyy');
+       
+        vadataaltera(vconta) := vdata;
+        
+        vafcalt (vconta) := i.cargo; 
+        
+        --htp.p('vconta ' || vconta   || ' ' || 'i.cargo ' || i.cargo || '</font><br>');
+         
+        vvaloralt(vconta) :=i.valor_diaria;
+       
+        vsomalter := vsomalter + vvaloralt(vconta);
+       
+        somadiaalter :=somadiaalter +1;
+         vvaloralt(vconta) :=i.valor_diaria;
+       
+        diasdifalt(vconta) := i.dias_dif;
+        
+        vsomatotalalter :=vsomatotalalter + i.valor_diaria;
+        
+        /*if( vdata < aux_fim) then
+        htp.p('vdata < aux_fim' || vdata || ' < ' || aux_fim || '</font><br>');
+            menos := menos + 1;
+        end if;*/
+        
+        --htp.p('meias_datas(to_number(vdata-vdata2)+1)' || meias_datas(to_number(vdata-vdata2)+1) || '</font><br>');
+         
+        
+        if(meias_datas(to_number(vdata-vdata2)+1) = 0.5) then
+            --htp.p('meias_datas(to_number(vdata-vdata2)+1) ' || meias_datas(to_number(vdata-vdata2)+1) || ' mais ' || mais || ' vdata , vdata2  ' || vdata || ' , ' || vdata2 || '</font><br>');
+            if(vdata = i.fim) then
+                if(vdatafimefet = i.fim) then
+                    mais := mais + 0.5;
+                    valor_excecao1 := 0.5;
+                    meias_datas(to_number(vdata-vdata2)+1) := meias_datas(to_number(vdata-vdata2)+1) - 0.5;
+                else
+                    mais := mais;
+                    valor_excecao1 := 0.0;
+                    meias_datas(to_number(vdata-vdata2)+1) := meias_datas(to_number(vdata-vdata2)+1);                
+                end if;
+            --htp.p('meias_datas(to_number(vdata-vdata2)+1) ' || meias_datas(to_number(vdata-vdata2)+1) || ' mais ' || mais || ' vdata , vdata2  ' || vdata || ' , ' || vdata2 || '</font><br>');
+            else
+                mais := mais + 0.5;
+                valor_excecao1 := 0.5;
+                meias_datas(to_number(vdata-vdata2)+1) := meias_datas(to_number(vdata-vdata2)+1) - 0.5;
+            end if;
+        end if;
+                
+        if(meias_datas(to_number(vdata-vdata2)+1) = 1.0) then
+        --htp.p('meias_datas(to_number(vdata-vdata2)+1) ' || meias_datas(to_number(vdata-vdata2)+1) || ' mais ' || mais || ' vdata , vdata2  ' || vdata || ' , ' || vdata2 || '</font><br>');
+            if(vdata = i.fim) then
+                mais := mais + 0.5;
+                valor_excecao1 := 0.5;
+                meias_datas(to_number(vdata-vdata2)+1) := meias_datas(to_number(vdata-vdata2)+1) - 0.5;
+            else
+                mais := mais + 1.0;
+                valor_excecao1 := 1.0;
+                meias_datas(to_number(vdata-vdata2)+1) := meias_datas(to_number(vdata-vdata2)+1) - 1.0;
+            end if;
+        --htp.p('meias_datas(to_number(vdata-vdata2)+1) ' || meias_datas(to_number(vdata-vdata2)+1) || ' mais ' || mais || ' vdata , vdata2  ' || vdata || ' , ' || vdata2 || '</font><br>');
+        end if;
+        
+        -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------        
+        for z in
+        (
+            select  data_alteracao  from
+            DIARIAS_EXCECAO
+            where 
+            codigo_lancamento in (select codigo from DIARIAS_lancamento_diarias  where codigo_evento = vcodigo_evento  
+            and codigo_pessoa = i.codigo_pessoa ) 
+            order by data_alteracao asc
+        )
+        
+        loop
+        
+        select CODIGO into vcargo1 from DIARIAS_LANCAMENTO_DIARIAS where CODIGO_EVENTO = vcodigo_evento and CODIGO_PESSOA = i.codigo_pessoa;
+        select dte.valor into valor_excecao2 from diarias_tipo_excecao dte, diarias_excecao de where dte.codigo = de.CODIGO_TIPO_EXCECAO and de.CODIGO_LANCAMENTO = vcargo1 and DATA_ALTERACAO = z.data_alteracao;
+        if(vdata = z.data_alteracao and vcargo1 = i.codigo) then
+            --if(meias_datas(to_number(vdata-vdata2)+1) = 0.0) then
+            mais := mais - (valor_excecao1 * valor_excecao2);
+            --htp.p('codigo_pessoa: ' || i.codigo_pessoa || ' data_alteracao: ' || z.data_alteracao || ' valor_excecao: ' || valor_excecao1 || '</font><br>');
+            --end if;
+        end if;
+        
+        end loop;
+        -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------        
+ 
+        
+        --htp.p('vdata , vdata2 e mais ' || vdata || ' , ' || vdata2 || ' e ' || mais || '</font><br>');
+                
+        /*if( vdata = aux_fim OR vdata = aux_fim2) then
+        
+            menos := menos + 0.5;
+            --htp.p('vdata = aux_fim' || vdata || ' = ' || aux_fim || ' '  || menos ||'</font><br>');
+        end if;
+        
+        if( vdata > aux_fim) then
+        
+            mais := mais + 1;
+            --htp.p('vdata > aux_fim' || vdata || ' > ' || aux_fim || ' '  || mais || '</font><br>');
+        end if;*/
+        
+        
+                
+         if vadataexclui (vconta)  = vdata then 
+             totalexclui := totalexclui +1;
+             select dte.valor into valor_excecao from diarias_tipo_excecao dte, diarias_excecao de where dte.codigo = de.CODIGO_TIPO_EXCECAO and de.CODIGO_LANCAMENTO = vcargo and DATA_ALTERACAO = vadataexclui (vconta);
+             if(valor_excecao is not null) then
+             total_excecao := total_excecao + valor_excecao;
+             end if;
+             --htp.p(vconta || ' ' || i.cargo || '</font><br>');
+        
+         end if;
+         
+         --htp.p(vconta || ' ' || vadataexclui (vconta) || ' ' || vafcalt(vconta) || '</font><br>');
+         
+         --htp.p(vconta || ' ' || i.cargo || '</font><br>');
+         
+         vconta := vconta + 1;
+        vdata := vdata +1;  
+        
+        
+      end loop; 
+      
+      if vdata is not null then
+        data_fim_altera_fc := vdata;
+        end if;
+      --htp.prn ('saí do loop');
+      --htp.p('vdata , vdata2 e mais ' || vdata || ' , ' || vdata2 || ' e ' || mais || '</font><br>');
+     
+      vdiariastipo(i.cargo).vdias := mais /*to_number(i.dias_dif)*/ - totalexclui + (totalexclui - total_excecao);
+      vdiariastipo(i.cargo).vfc := i.valor_diaria;
+      vdiariastipo(i.cargo).vdataini := i.inicio;
+      vdiariastipo(i.cargo).vdatafim := i.fim;
+      vdiariastipo(i.cargo).vdiaexclui  := total_excecao ;
+      
+      /*if (vdiariastipo(i.cargo).vdataini = aux_fim) then
+        vdiariastipo(i.cargo).vdias := vdiariastipo(i.cargo).vdias + 0.5;
+      end if;*/
+      
+      /*if(vdiariastipo(i.cargo).vdatafim+1 = vdata ) then
+        vdiariastipo(i.cargo).vdias := vdiariastipo(i.cargo).vdias - 0.5;
+    end if;
+      
+    if(menos = 0) then
+        aux_fim2 := aux_fim;
+        aux_inicio2 := aux_inicio;
+    end if;
+      
+      aux_fim := i.fim;
+      aux_inicio := i.inicio;*/
+      
+      
+      --htp.p(cargo || ' ');
+      --htp.p(i.dias_dif || ' ');     
+      --htp.p('##'||vdiariastipo(i.cargo).vdias|| '##' || '</font><br>');
+      
+        --htp.p('##' || vdiariastipo(i.cargo).vdataini || ' ' || vdiariastipo(i.cargo).vdatafim || ' ' || vdiariastipo(i.cargo).vdias || ' ' || i.cargo || '</font><br>' );
+ 
+      
+      totalexclui :=  0;
+      --valor_excecao := 0;
+      total_excecao := 0;
+ 
+end loop;
+ 
+ 
+for k in 1..l loop
+ 
+  if vadatanormal (k)= vadataaltera(k) then
+        vafc (k):=vafcalt(k);
+        vvalorpadrao (k):= vvaloralt(k);
+        
+ end if;
+ 
+end loop;
+ 
+for k in 1..l loop
+  if vadatanormal(k)= vadataaltera(k)  then
+    vafc(k)  :=  vafcalt(k);
+    vvalorpadrao(k) :=  vvaloralt(k); 
+   
+  end if;
+ 
+   if k >l and novalista is null then
+      novalista := novalista ||'diasfnal:'|| diasfinal ||'fcfinal:'||fcfinal||'somafinal:'||somafinal;
+   end if;
+end loop;
+ 
+i := 1;
+diasfinal :=0;
+ 
+total_excecao := 0;
+ 
+if(data_fim_altera_fc is not null) then
+vdata := data_fim_altera_fc;
+end if;
+ 
+vdataf := data_fim_pessoa;
+ 
+--htp.p(vdata || vdataf);
+ 
+loop
+      exit when to_char(vdata,'fmdd/mm/yy') >  to_char(vdataf,'fmdd/mm/yy');
+        
+        if(vdata is not null) then
+        vcontexclui := to_number(vdata - data_inicio_pessoa + 1);
+        end if;
+        
+        --total_excecao := vcontexclui
+        
+        --htp.p( 'vadataexclui (vcontexclui) ' || vadataexclui (vcontexclui) || ' ' || 'vdata ' || vdata ||  '</font><br>');
+        if(vadataexclui (vcontexclui) = vdataf) then
+            if (vadataexclui (vcontexclui)  = vdata and vcontexclui is not null) then 
+            select dte.valor into valor_excecao from diarias_tipo_excecao dte, diarias_excecao de where dte.codigo = de.CODIGO_TIPO_EXCECAO and de.CODIGO_LANCAMENTO = vcargo and DATA_ALTERACAO = vadataexclui (vcontexclui);
+             total_excecao := total_excecao + (valor_excecao * 0.5);
+            end if;
+        else
+            if (vadataexclui (vcontexclui)  = vdata and vcontexclui is not null) then 
+            select dte.valor into valor_excecao from diarias_tipo_excecao dte, diarias_excecao de where dte.codigo = de.CODIGO_TIPO_EXCECAO and de.CODIGO_LANCAMENTO = vcargo and DATA_ALTERACAO = vadataexclui (vcontexclui);
+             total_excecao := total_excecao + valor_excecao;
+            end if;
+            -- htp.p(to_char(to_date(vadataexclui(vcontexclui),'fmdd/mm/yyyy'),'fmdd/mm/yyyy'));
+        
+        end if;
+        
+        --htp.p( 'total excecao: ' || total_excecao || ' vdata: ' || vdata || ' vdataf: ' || vdataf || ' vcontaexclui: ' || vcontexclui || '</font><br>');
+ 
+        if(vdata is not null) then
+        vdata := vdata + 1;
+        end if;
+end loop;
+ 
+--htp.p( 'vadataexclui (vcontexclui) '|| vadataexclui (vcontexclui) || ' total excecao: ' || total_excecao || ' vdata: ' || vdata || ' vdataf: ' || vdataf || ' vcontaexclui: ' || vcontexclui || '</font><br>');
+    
+a := vdiariastipo.first;
+vpadrao := vdiariastipo.first;
+ 
+if (total_excecao <> 0) then
+vdiariastipo(a).vdiaexclui := total_excecao;
+ 
+end if;
+ 
+ --htp.p(vpadrao || '</font><br>' );
+ 
+while a is not null loop
+ 
+    --htp.p('>>' || vdiariastipo(a).vdataini || ' ' || vdiariastipo(a).vdatafim || ' ' || vdiariastipo(a).vdias || ' ' || a || '</font><br>' );
+ 
+    --htp.p('##' || vdiariastipo(vpadrao).vdias || '##' || '</font><br>');
+    vprox:=  vdiariastipo.next(a);
+        
+    if a <>  vdiariastipo.next(a)  then
+        if  vdiariastipo(vpadrao).vfc > vdiariastipo(vprox).vfc then
+        aux := vdiariastipo(vpadrao);
+        vdiariastipo(vpadrao) := vdiariastipo(vprox);
+        vdiariastipo(vprox) := aux;
+        end if;
+        --htp.p(vdiariastipo(vpadrao).vdias || '</font><br>');
+         vdiariastipo(vpadrao).vdias := vdiariastipo(vpadrao).vdias - vdiariastipo(vprox).vdias - vdiariastipo(vprox).vdiaexclui;
+         
+             --htp.p('>>' || vdiariastipo(vprox).vdataini || ' ' || vdiariastipo(vprox).vdatafim || ' ' || vdiariastipo(vprox).vdias || ' ' || vprox || '</font><br>' );
+ 
+    end if;
+    a := vdiariastipo.next(a);
+end loop;
+ 
+if(vdiariastipo(vpadrao).vdiaexclui is not null) then
+--htp.p(vdiariastipo(vpadrao).vdiaexclui);
+ vdiariastipo(vpadrao).vdias := vdiariastipo(vpadrao).vdias - vdiariastipo(vpadrao).vdiaexclui ;
+else
+ vdiariastipo(vpadrao).vdias := vdiariastipo(vpadrao).vdias;
+ end if;
+ 
+a := vdiariastipo.first;
+ 
+i :=1;
+ 
+ 
+a := vdiariastipo.first;
+ 
+i := 1;
+while a is not null loop
+ 
+       
+    if(vdiariastipo(a).vdias <= 0) 
+    then
+        null;
+    else
+    novalista :=novalista ||'/' ||vdiariastipo(a).vdias||'/'||a||'/'||vdiariastipo(a).vfc ||'/'||vdiariastipo(a).vdiaexclui ;--|| '/' ||vdiariastipo(a).vdataini || '/' ||vdiariastipo(a).vdatafim;
+   end if;
+   
+      
+    --if(vdiariastipo(a).vdiaexclui is null)
+    --then 
+       -- novalista := novalista || '0';
+    --end if;
+    
+ 
+    i := i+1;
+    a := vdiariastipo.next(a);
+end loop;
+novalista :=novalista ||'/'||vtotalauxaliment||'/'||vtaxatotal;
+ 
+return novalista;
+exception
+         when others then
+                          
+return SQLERRM ||'deu erro$$$$';
+ 
+end;

@@ -1,0 +1,50 @@
+create or replace FUNCTION  "DIARIAS_RELATORIOS_TRECHOS_3" 
+(v_evento in NUMBER, v_pessoa in NUMBER, v_tipo_pessoa in NUMBER)
+return VARCHAR2
+is
+COD_AEREO_T1 varchar2(4);
+COD_AEREO_T2 varchar2(4);
+
+COD_AEREO_T2_ANT varchar2(4) := '';
+
+CODS_SEQ varchar2(200) := '';
+
+begin
+	
+	for viagem_trecho in (select rownum, DVT.DATAHORA, DVT.CODIGO_TERMINAL_ORIGEM, DVT.CODIGO_TERMINAL_DESTINO from DIARIAS_VIAGEM_TRECHO DVT, DIARIAS_TRECHO_PESSOA DTP, DIARIAS_LANCAMENTO_VIAGEM DLV where DVT.CODIGO = DTP.CODIGO_TRECHO and DLV.CODIGO = DVT.CODIGO_LANCAMENTO_VIAGEM and DLV.CODIGO_EVENTO = v_evento and DVT.TIPO_VIAGEM = 1 and DTP.CODIGO_PESSOA = v_pessoa and DTP.TIPO_PESSOA =  v_tipo_pessoa order by datahora) loop
+	
+		select 
+		case 
+		when dt1.CODIGO_IATA is not null 
+			then dt1.CODIGO_IATA 
+		when dt1.CODIGO_ICAO is not null and dt1.CODIGO_IATA is null 
+			then dt1.CODIGO_ICAO 
+		ELSE 
+			'NAI' 
+		end as "COD_AEREO",
+		case 
+		when dt2.CODIGO_IATA is not null 
+			then dt2.CODIGO_IATA 
+		when dt2.CODIGO_ICAO is not null and dt2.CODIGO_IATA is null 
+			then dt2.CODIGO_ICAO 
+		ELSE 
+			'NAI' 
+		end as "COD_AEREO_T2" 		
+		into COD_AEREO_T1, COD_AEREO_T2
+		from diarias_terminal dt1, diarias_terminal dt2 where dt1.CODIGO = viagem_trecho.CODIGO_TERMINAL_ORIGEM and dt2.CODIGO = viagem_trecho.CODIGO_TERMINAL_DESTINO;
+		
+		if(COD_AEREO_T2_ANT = COD_AEREO_T1) then
+			CODS_SEQ := CODS_SEQ || '/' || COD_AEREO_T2;
+		else
+			if (viagem_trecho.rownum = 1) then
+				CODS_SEQ := CODS_SEQ || COD_AEREO_T1 || '/' || COD_AEREO_T2;
+			else
+				CODS_SEQ := CODS_SEQ || '-' || COD_AEREO_T1 || '/' || COD_AEREO_T2;		
+			end if;		
+		end if;
+		
+		COD_AEREO_T2_ANT := COD_AEREO_T2;
+	end loop;
+	
+	return CODS_SEQ;
+end;

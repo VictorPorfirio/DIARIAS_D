@@ -1,0 +1,78 @@
+create or replace FUNCTION vPessoa(tipo in number,retorna in number, lcodigo in number)
+     RETURN  VARCHAR2
+   IS
+      v_pessoa     VARCHAR2(200);
+      vcodigo        VARCHAR2(50); 
+      VTOTAL NUMBER :=0;
+      
+Begin
+
+   if retorna =1 then -- codigo
+      case tipo
+         when 4 then
+            select ut.COD_PESSOA_VINCULO_EMPREG into vcodigo from  VW_APEX_USUARIO u, VW_APEX_USUARIO_TCU UT  where  
+                 ut.COD = u.cod and   ut.COD_PESSOA_VINCULO_EMPREG  =lcodigo;
+         when 1 then
+             select count(cod) into vTOTAL from VW_APEX_MINISTRO where cod =lcodigo and upper(IND_SITUACAO_FUNCIONAL) <> 'I';
+             if vTOTAL >0 then
+                select cod into vcodigo from VW_APEX_MINISTRO where cod =lcodigo;
+              else
+                 select cod into vcodigo  from VW_APEX_MEMBRO_MINISTERIO_PUBL where cod =lcodigo and upper(IND_SITUACAO_FUNCIONAL) <> 'I';
+             end if;
+             
+         when 2 then
+          --select 10  into vcodigo from dual;
+             select codigo into vcodigo from DIARIAS_COLABORADOR  where codigo =lcodigo;
+          when 3 then
+             select cod into vcodigo from VW_APEX_VW_USU_PRESTADOR_SERVI  where cod =lcodigo;
+          else  vcodigo :=0;
+        end case;  
+   elsif retorna =2 then
+        case tipo
+         when 4 then
+            select INITCAP(LOWER(nome)) ||' '||NUM_MATRICULA ||'-'||NUM_DV_MATRICULA  into v_pessoa from VW_APEX_PESSOA_VINCULADA_TCU  where cod =lcodigo;
+         when 1 then
+             select count(nome) into vTOTAL from VW_APEX_MINISTRO where cod =lcodigo and upper(IND_SITUACAO_FUNCIONAL) <> 'I';
+             if vTOTAL >0 then
+                select INITCAP(LOWER(nome)) ||' '||NUM_MATRICULA ||'-'||NUM_DV_MATRICULA into v_pessoa from VW_APEX_MINISTRO where cod =lcodigo;
+              else
+                 select INITCAP(LOWER(nome)) ||' '||NUM_MATRICULA ||'-'||NUM_DV_MATRICULA into v_pessoa  from VW_APEX_MEMBRO_MINISTERIO_PUBL where cod =lcodigo and upper(IND_SITUACAO_FUNCIONAL) <> 'I';
+             end if;
+             
+         when 2 then
+            -- select 'teste' into v_pessoa  from dual;
+             select  distinct INITCAP(LOWER(nome)) ||' - ' || 'Colaborador' into v_pessoa from DIARIAS_COLABORADOR  where codIGO =lcodigo;
+          when 3 then
+             select INITCAP(LOWER(nome)) ||' - ' || 'Prestador de serviço'  into v_pessoa from VW_APEX_VW_USU_PRESTADOR_SERVI  where cod =lcodigo;
+          else  vcodigo :=0;
+        end case;  
+      elsif retorna =3 then
+           case tipo
+         when 4 then
+            select upper(u.cod_login)   into v_pessoa from  vW_APEX_USUARIO u, VW_APEX_USUARIO_TCU UT  where  
+                 ut.COD = u.cod and   ut.COD_PESSOA_VINCULO_EMPREG =lcodigo;
+         when 1 then
+             select count(nome) into vTOTAL from VW_APEX_MINISTRO where cod =lcodigo and upper(IND_SITUACAO_FUNCIONAL) <> 'I';
+             if vTOTAL >0 then
+                select upper(u.cod_login)  into v_pessoa from VW_APEX_MINISTRO m, vW_APEX_USUARIO u, VW_APEX_USUARIO_TCU UT where  m.cod =lcodigo and ut.COD_PESSOA_VINCULO_EMPREG = m.cod and ut.COD = u.cod;
+              else
+                 select upper(u.cod_login) into v_pessoa  from VW_APEX_MEMBRO_MINISTERIO_PUBL p,  vW_APEX_USUARIO u, VW_APEX_USUARIO_TCU UT  where  ut.COD_PESSOA_VINCULO_EMPREG = p.cod  and
+                 ut.COD = u.cod and    p.cod =lcodigo and upper(IND_SITUACAO_FUNCIONAL) <> 'I';
+             end if;
+             
+         when 2 then
+            -- select 'teste' into v_pessoa  from dual;
+             select  distinct (cpf) into v_pessoa from DIARIAS_COLABORADOR  where codIGO =lcodigo;
+          when 3 then
+             select upper(u.cod_login) into v_pessoa from VW_APEX_VW_USU_PRESTADOR_SERVI p, vW_APEX_USUARIO u  where p.cod =lcodigo and p.cod = u.cod;
+          else  vcodigo :=0;
+        end case;  
+      
+   
+   end if;
+if retorna =1 then
+   return  vcodigo;
+ else
+     return  v_pessoa;
+end if;
+end;

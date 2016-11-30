@@ -1,0 +1,38 @@
+create or replace FUNCTION  "DIARIAS_TAXA_EMBARQUE" 
+(vdataini date, vdatafim date,vtipo NUMBER)
+return number
+     is
+ 
+l number :=0;
+vdatainicial date;
+vdatafinal date;
+vdia number := 0;
+vsomadiautil number :=0;
+vtotal number := 0;
+vtotalgeral number := 0;
+lista_matches clob;
+BEGIN 
+for x in(
+    
+  select valor, data_inicio, data_fim,codigo_tipo from DIARIAS_HIST_VALOR_EMBARQUE 
+  where       to_char(data_inicio,'mm/dd/yyyy') <= to_char(vdatafim,'mm/dd/yyyy') and
+  to_char(data_fim,'mm/dd/yyyy') >= to_char(vdataini,'mm/dd/yyyy') and codigo_tipo = vtipo   or  
+      (to_char(data_inicio,'mm/dd/yyyy') <= to_char(vdatafim,'mm/dd/yyyy') and data_fim is null and codigo_tipo = vtipo )                     
+    
+)
+loop
+  -- l := l+1;
+  vsomadiautil := vsomadiautil + 1;
+  vtotal := vtotal +  x.valor;
+  lista_matches := lista_matches|| 'To somando dia útil'; 
+  vdatainicial := vdatainicial +1;
+  lista_matches := lista_matches|| 'loop efetivo ';
+end loop;
+vtotalgeral := vtotal;
+return vtotalgeral;
+exception
+         when others then 
+         
+         --lista_matches := lista_matches || SQLERRM;             
+         return SQLERRM;     
+End;

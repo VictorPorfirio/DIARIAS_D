@@ -1,0 +1,223 @@
+create or replace FUNCTION  "DIARIAS_DISCRIMINA_VALOR" 
+(vcodigo_evento in NUMBER,
+vcodigo_servidor in NUMBER,
+vdatadaconsulta in DATE,
+vtipodeviagem in VARCHAR2)
+return VARCHAR2
+is
+ CURSOR PESSOACONSULTADA IS SELECT  dl.codigo, dc.cargo, substr(dc.cargo,4,1) as Funcao, dl.codigo_pessoa, dl.data_inicio inicio, dl.data_fim fim,dl.cod_autoridade_acompanhada, dl.codigo_evento,
+    hd.valor valor_diaria, hd.data_inicio inicio_diaria, hd.data_fim  fim_diaria, to_number(dl.data_fim - dl.data_inicio +0.5) diasdif
+    FROM DIARIAS_lancamento_diarias  dl, DIARIAS_TIPO_DIARIA td, DIARIAS_HIST_VALOR_DIARIA hd, diarias_cargo dc 
+    WHERE  
+    dl.codigo_evento = vcodigo_evento  and
+    dl.codigo_pessoa = vcodigo_servidor and
+    hd.codigo_cargo = dl.cod_cargo and
+    td.codigo = hd.codigo_tipo and 
+    hd.data_fim is null and
+    dc.codigo = hd.codigo_cargo 
+    order by dl.data_inicio, dl.data_fim,4;
+    /*SELECT  dl.codigo, dl.codigo_diaria,dc.cargo, substr(dc.cargo,5,1) as Funcao, dl.codigo_pessoa, dl.data_inicio inicio, dl.data_fim fim,dl.cod_autoridade_acompanhada, dl.codigo_evento,
+    hd.valor valor_diaria, hd.data_inicio inicio_diaria, hd.data_fim  fim_diaria, dl.codigo_evento, to_number(dl.data_fim - dl.data_inicio) dif
+    FROM DIARIAS_lancamento_diarias  dl, DIARIAS_TIPO_DIARIA td, DIARIAS_HIST_VALOR_DIARIA hd, diarias_cargo dc
+    WHERE  
+    dl.codigo_evento = vcodigo_evento  and
+    dl.codigo_pessoa = vcodigo_servidor and
+    hd.codigo = dl.codigo_diaria and
+    td.codigo = hd.codigo_tipo and 
+    hd.data_fim is null and
+    dc.codigo = hd.codigo_cargo 
+    order by dl.data_inicio, dl.data_fim,4;*/
+PESSOACONSULTADA_CUR PESSOACONSULTADA%ROWTYPE;
+ 
+lista_matches VARCHAR(2000);
+ 
+ l number;
+ vinclui  boolean:=true;
+ vcargo number;
+ fcargo number;
+ vdatafim date;
+ k number;
+ j number;
+ u number;
+ valordiariapadrao number;
+ vdata date;
+ vdia varchar(4); 
+ valimentacao number;
+ vtaxaembarque number;
+ vsomadiautil number;
+ 
+ vtotal number;
+ vseq number;
+ valortotal number;
+ vdiainicio date;
+ vdiafim date;
+ vdiafimalter date ;
+ vtotalalter number;
+ valortotalalter number;
+ valortotalgeral number;
+ valorpadraodiaria number;
+lista_retorno varchar(500);
+novalista varchar(500);
+novasomaalter number;
+novadiasdif number;
+novocargo varchar2(50);
+novadiaria number;
+TYPE vacodigoalteradorarray IS VARRAY(500) OF number;
+TYPE vafcarray IS VARRAY(500) OF number;
+TYPE vacodigoalteradoarray IS VARRAY(500) OF number;
+TYPE vadatainiarray IS VARRAY(500) OF date;
+TYPE vadatafimarray IS VARRAY(500) OF date;
+vafc vafcarray;
+vacodigoalterado  vacodigoalteradoarray; 
+vacodigoalterador vacodigoalteradoarray;
+vadataini  vadatainiarray;
+vadatafim vadatafimarray;
+novadiadif number;
+diaini date;
+diafim date;
+vsaida  varchar (4000);
+BEGIN 
+ 
+lista_matches := 'primeiro cursor e variáveis';
+k :=0;
+novasomaalter := 0;
+valordiariapadrao :=0;
+vsomadiautil :=0;
+valortotal :=0;
+vtotalalter :=0;
+valortotalalter :=0;
+u:=0;
+vafc :=vafcarray();
+vacodigoalterado := vacodigoalteradoarray();
+vacodigoalterador := vacodigoalteradoarray();
+vadataini := vadatainiarray ();
+vadatafim :=vadatafimarray ();
+--vsaida := CALCULA_DIARIA_FC_BR(vcodigo_evento,vcodigo_servidor);
+FOR PESSOACONSULTADA_CUR IN PESSOACONSULTADA
+LOOP
+ lista_matches := 
+ lista_matches|| 'totaldedias'; 
+ vdata := PESSOACONSULTADA_CUR.inicio + k;
+ lista_matches := lista_matches|| 'vdata:' ||vdata ; 
+EXIT WHEN PESSOACONSULTADA%NOTFOUND;
+  --total de dias  que a pesso vai passar no evento
+   valordiariapadrao :=(PESSOACONSULTADA_CUR.valor_diaria);
+   loop
+     exit when vdata =  PESSOACONSULTADA_CUR.fim;
+     select to_char (vdata, 'D') into vdia from dual;
+     lista_matches := lista_matches|| 'Dia: ' || vdia;
+     case
+        
+        when  vdia <> '1' and  vdia <> '7' then
+            vsomadiautil := vsomadiautil + 1;
+            lista_matches := lista_matches|| 'To somando dia útil';  
+       else
+            lista_matches := lista_matches|| ' fim de semana ';           
+            
+     end  case;
+    
+     k := k +1;
+     vdata := PESSOACONSULTADA_CUR.inicio + k;
+     novadiaria :=PESSOACONSULTADA_CUR.valor_diaria;
+     novocargo:= PESSOACONSULTADA_CUR.CARGO;
+     novadiasdif :=PESSOACONSULTADA_CUR.diasdif;
+    diaini := PESSOACONSULTADA_CUR.inicio;   
+    diafim := PESSOACONSULTADA_CUR.fim;
+   end loop;
+   vsomadiautil :=  vsomadiautil + 0.5;
+  lista_matches := lista_matches|| ' passeidias útil. Total--: ';  
+  lista_matches := lista_matches || vsomadiautil;   
+  lista_matches := lista_matches|| ' Fim diária: ' ||PESSOACONSULTADA_CUR.fim;
+  lista_matches := lista_matches|| 'Inicio diária: '|| PESSOACONSULTADA_CUR.inicio;
+  vtotal :=  PESSOACONSULTADA_CUR.fim - PESSOACONSULTADA_CUR.inicio + 0.5;
+  vdiainicio := PESSOACONSULTADA_CUR.inicio;
+  vdiafim :=PESSOACONSULTADA_CUR.fim;
+  lista_matches := lista_matches || '----vtotal: ----' ||vtotal;   
+  -- valortotal := valortotal + ((vtotal) *(PESSOACONSULTADA_CUR.valor_diaria)); -- valor total lançamento original
+end loop;
+for i in
+  (
+    SELECT dl.codigo,dc.cargo, substr(dc.cargo,5,1) as Funcao, dl.codigo_pessoa, da.data_inicio inicio, da.data_fim fim, to_number(da.data_fim - da.data_inicio) dias_dif,
+    dl.cod_autoridade_acompanhada, dl.codigo_evento,
+    hd.valor valor_diaria, hd.data_inicio inicio_diaria, hd.data_fim  fim_diaria  
+    FROM DIARIAS_lancamento_diarias  dl, DIARIAS_ALTERACAO DA,DIARIAS_TIPO_DIARIA td, DIARIAS_HIST_VALOR_DIARIA hd, diarias_cargo dc 
+    WHERE  
+    da.CODIGO_LANCAMENTO_MODIFICADOR = dl.codigo and
+    hd.codigo_cargo = dl.cod_cargo and
+    td.codigo = hd.codigo_tipo and 
+    dl.codigo_evento = vcodigo_evento and
+    da.CODIGO_LANCAMENTO_MODIFICADO  =(select codigo from DIARIAS_LANCAMENTO_DIARIAS where codigo_evento = vcodigo_evento and codigo_pessoa = vcodigo_servidor) and
+    hd.data_fim is null and
+    dc.codigo = hd.codigo_cargo 
+    order by da.data_inicio, da.data_fim,4
+    
+     )
+     
+   loop
+  
+     --valortotal := valortotal + ((i.data_fim) - (i.data_inicio)) * (i.valor_diaria);
+    lista_matches := lista_matches || '--Data fim --';   
+    lista_matches := lista_matches || i.fim;
+    lista_matches := lista_matches || '--Data ini--';   
+    lista_matches := lista_matches || i.inicio;
+    u:=i.dias_dif + to_number(u);
+    vtotalalter := vtotalalter +  to_number(i.fim - i.inicio);
+    lista_matches := lista_matches || 'u vtotalalterar: ----';  
+    lista_matches := lista_matches ||u ||'//'||vtotalalter;
+    vdiafimalter := i.fim;
+    lista_matches := lista_matches|| 'dia fim alter e dia fim normal:' || vdiafimalter || vdiafim;
+   
+    if  vdiafimalter <> vdiafim then  -- checar se chegou no dia fim para calcualr meia diarias
+       valortotalalter := valortotalalter + (vtotalalter) * (i.valor_diaria);
+    else 
+       vtotalalter := vtotalalter + 0.5;  
+       valortotalalter := valortotalalter + (vtotalalter) * (i.valor_diaria);
+       lista_matches := lista_matches|| ' entrei no 0,5';
+      
+    end if;
+    lista_matches := lista_matches || '---valor -total -alter: ----';   
+    lista_matches := lista_matches || '---valor -total -alter: ----'|| valortotalalter;
+    novalista := novalista ||  to_char(i.valor_diaria,'FM999G999G999D90') ||' <br> <br> ';
+    novasomaalter := novasomaalter + to_number((i.dias_dif +0.5));
+   end loop;
+   if   novasomaalter < novadiasdif  then
+      
+       novalista := novalista || to_char(novadiaria,'FM999G999G999D90');
+   else 
+       if novasomaalter =0  then
+           novalista := novalista || to_char(novadiaria,'FM999G999G999D90');
+        end if;
+   end if;
+ 
+lista_matches :=  'diasdif' || PESSOACONSULTADA_CUR.diasdif ||'somaalter'|| novasomaalter;
+/*lista_matches := lista_matches|| 'comparaar os totais';    
+lista_matches :=lista_matches|| '--vaçpr total--';    
+lista_matches :=lista_matches|| valortotal;
+lista_matches :=lista_matches|| '--v total--';    
+lista_matches :=lista_matches|| valortotalalter;*/
+case 
+    when  to_number(vtotalalter) = to_number(vtotal)  then
+      -- valortotal := valortotal + ((vtotal+0,5)*(valordiariapadrao));
+       valortotal := 0;
+       lista_matches := lista_matches|| '--to_number(vtotalalter) = to_number(vtotal)--';   
+    when vtotalalter < vtotal then 
+       valortotal := valortotal + ((vtotal - vtotalalter) * (valordiariapadrao));
+       lista_matches := lista_matches|| '---vtotalalter < vtotal--';  
+    else
+       lista_matches := lista_matches|| 'sem opção no case';   
+       u := 0;
+end case;
+--select valor into valimentacao from DIARIAS_HIST_AUX_ALIMENTACAO ;--where data_inicio >=to_date(vdatadaconsulta,'dd/mm/yyyy');
+--valimentacao := valimentacao * vsomadiautil;
+--select valor into vtaxaembarque from DIARIAS_HIST_VALOR_EMBARQUE WHERE CODIGO =2; --where data_inicio >=vdatadaconsulta;
+--valortotalgeral := valortotal + valortotalalter;
+--lista_retorno := '-'||valimentacao ||'-'||valortotal ||'-'||valortotalalter||'-'||valortotalgeral ||'-'||vtaxaembarque ||'-'|| vsomadiautil||'-'||valordiariapadrao;--
+--valortotalgeral := valortotal + valortotalalter;
+--return lista_matches;
+--return lista_retorno; 
+return novalista;
+exception
+         when others then 
+                          
+    return lista_matches || SQLERRM;
+END;

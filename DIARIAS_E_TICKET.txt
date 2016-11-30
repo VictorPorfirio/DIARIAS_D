@@ -1,0 +1,35 @@
+create or replace FUNCTION  "DIARIAS_E_TICKET" 
+(vcodigoevento in NUMBER,
+vcodigoservidor in NUMBER)
+return VARCHAR2
+is
+
+bilhetes varchar2(200);
+flag number;
+
+begin
+bilhetes := '';
+flag  := 0;
+
+for x in (select distinct DB.CODIGO as CODIGO, DB.CODIGO_BILHETE as CODIGO_BILHETE from DIARIAS_LANCAMENTO_VIAGEM DLV, DIARIAS_VIAGEM_TRECHO DVT, DIARIAS_TRECHO_PESSOA DTP, DIARIAS_BILHETE_TRECHO DBT,DIARIAS_BILHETE DB, DIARIAS_LANCAMENTO_DIARIAS DLD
+where DBT.CODIGO_BILHETE = DB.CODIGO
+and DTP.CODIGO = DBT.CODIGO_TRECHO_PESSOA
+and DTP.CODIGO_TRECHO = DVT.CODIGO
+and DVT.CODIGO_LANCAMENTO_VIAGEM = DLV.CODIGO
+and DLV.CODIGO_EVENTO = vcodigoevento
+and dtp.codigo_pessoa = vcodigoservidor
+AND DTP.tipo_pessoa in (1,2,3,4) 
+) loop
+
+if (flag = 0) then
+	bilhetes := bilhetes || x.CODIGO_BILHETE; 
+	flag := 1;
+else 
+	bilhetes := bilhetes ||'/'|| x.CODIGO_BILHETE; 
+end if;
+
+end loop;
+
+return bilhetes;
+
+end;

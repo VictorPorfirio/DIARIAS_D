@@ -1,0 +1,56 @@
+create or replace FUNCTION  "DIARIAS_EXCECAO_GERAL" (vcodigo_evento IN NUMBER)
+return VARCHAR2
+IS
+   
+    novalista VARCHAR(500);
+    vdataant date :='01/01/1990';
+    vvalorant number :=0;
+    a varchar2(4000); 
+    i number :=0;
+    TYPE diarias_tipo IS RECORD (
+       vfc     number,
+       vdiaexclui DATE,
+        vvaloralt number    
+  );
+   
+     TYPE  vdiarias_tipo IS TABLE OF diarias_tipo
+     INDEX BY varchar2(30);
+     
+     vdiariastipo vdiarias_tipo;
+  BEGIN
+  
+     
+ 
+    
+   for z in
+        (
+            select  DE.data_alteracao,dld.CODIGO_EVENTO,dld.CODIGO_PESSOA,dld.data_inicio_efetiva,dld.DATA_FIM_EFETIVA,dc.cargo,DTE.VALOR  from
+            DIARIAS_EXCECAO DE, DIARIAS_LANCAMENTO_DIARIAS DLD, diarias_cargo DC, DIARIAS_TIPO_EXCECAO DTE
+            where 
+            DE.codigo_lancamento =dld.codigo AND
+            dld.codigo_evento =vcodigo_evento  AND
+            DC.CODIGO =DLD.COD_CARGO and
+            DE.CODIGO_TIPO_EXCECAO= DTE.CODIGO
+            order by data_alteracao asc
+     )
+        
+        loop
+         if z.data_alteracao <> vdataant then
+           vdiariastipo(z.cargo).vdiaexclui :=z.data_alteracao;
+           vdiariastipo(z.cargo).vvaloralt := z.valor;
+         end if;
+         a := vdiariastipo.first;
+         i := 1;
+         vdataant := z.data_alteracao;
+      
+  end loop;
+   while a is not null loop
+         
+         novalista :=novalista ||'%' ||vdiariastipo(a).vdiaexclui||'%'||a||'%'||vdiariastipo(a).vvaloralt ;--|| '/' ||vdiariastipo(a).vdataini || '/' ||vdiariastipo(a).vdatafim;
+         i := i+1;
+         a := vdiariastipo.next(a);
+    end loop;       
+ 
+ return novalista;
+         
+END;

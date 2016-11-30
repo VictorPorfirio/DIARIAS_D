@@ -1,0 +1,32 @@
+create or replace FUNCTION  "DIARIAS_DATA_VOLTA" 
+(vcodigoevento in NUMBER,
+vcodigoservidor in NUMBER)
+return DATE
+is
+data date;
+evento number;
+contagem number;
+begin
+    
+SELECT codigo_evento, count(codigo_evento) into evento, contagem
+FROM DIARIAS_LANCAMENTO_VIAGEM 
+WHERE CODIGO in (select     DLV.codigo 
+ from     DIARIAS_VIAGEM_TRECHO DVT,
+     DIARIAS_TRECHO_PESSOA DTP,
+     DIARIAS_LANCAMENTO_VIAGEM DLV,
+     diarias_evento de
+ where  DLV.CODIGO_EVENTO = DE.CODIGO 
+ and    DLV.CODIGO = DVT.CODIGO_LANCAMENTO_VIAGEM
+ and    DTP.CODIGO_PESSOA = vcodigoservidor
+ and    DTP.CODIGO_TRECHO = DVT.CODIGO
+ and    DE.CODIGO = vcodigoevento)
+group by codigo_evento
+having count(codigo_evento) > 0; 
+if(contagem > 0)
+then
+select max(datahora) into data from diarias_viagem_trecho where codigo_lancamento_viagem in (select codigo from diarias_lancamento_viagem where codigo_evento = vcodigoevento) and codigo in (select codigo_trecho from diarias_trecho_pessoa where codigo_pessoa = vcodigoservidor);
+else
+data := NULL;
+end if;
+return data;
+end;

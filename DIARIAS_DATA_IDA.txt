@@ -1,0 +1,11 @@
+create or replace FUNCTION  "DIARIAS_DATA_IDA" 
+(vcodigoevento in NUMBER,
+vcodigoservidor in NUMBER)
+return DATE
+is
+data date;
+begin
+select min(datahora) into data from diarias_viagem_trecho where codigo_lancamento_viagem in (select codigo from diarias_lancamento_viagem where codigo_evento = vcodigoevento) and codigo in (select codigo_trecho from diarias_trecho_pessoa where codigo_pessoa = vcodigoservidor);
+return data;
+end;
+IA

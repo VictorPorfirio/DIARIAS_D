@@ -1,0 +1,53 @@
+create or replace function initcapmc(p_str varchar2) return varchar2 is
+v_carac_anterior varchar2(1);
+v_carac_atual varchar2(1);
+v_carac_proximo varchar2(1);
+v_carac_proximo_proximo varchar2(1);
+v_carac_proximo_proximo_p varchar2(1);
+v_retorno varchar2(32767);
+begin
+--Atribui o primeiro caractere como maiúsculo.
+v_retorno := upper(substr(p_str,1,1));
+
+--Varre a string a partir da segunda posição
+for i in 2..length(p_str) loop
+--Recupera o caractere que está sendo analisado
+v_carac_atual := substr(p_str,i,1);
+
+if(i+1 <> (length(p_str)-2) and i+2 <> (length(p_str)-1) and i+3 <> length(p_str)) then
+    if((v_carac_atual  = 'D' or v_carac_atual  = 'd') and v_carac_anterior = ' ') then
+       v_carac_proximo := substr(p_str,i+1,1); 
+       v_carac_proximo_proximo := substr(p_str,i+2,1);
+       v_carac_proximo_proximo_p := substr(p_str,i+3,1);       
+      if((v_carac_proximo = 'a' OR v_carac_proximo = 'e' OR v_carac_proximo = 'o' OR v_carac_proximo = 'i' or v_carac_proximo = 'A' OR v_carac_proximo = 'E' OR v_carac_proximo = 'O' OR v_carac_proximo = 'I') AND (v_carac_proximo_proximo = ' ' OR ((v_carac_proximo_proximo = 's' or v_carac_proximo_proximo = 'S')AND v_carac_proximo_proximo_p = ' '))) then
+       v_carac_anterior := v_carac_atual;
+       v_retorno := v_retorno || lower(v_carac_atual);
+        continue;
+      end if;
+    end if;  
+    if((v_carac_atual  = 'E' or v_carac_atual  = 'e') and v_carac_anterior = ' ') then
+        v_carac_proximo := substr(p_str,i+1,1);
+        if(v_carac_proximo = ' ') then
+        v_carac_anterior := v_carac_atual;
+        v_retorno := v_retorno || lower(v_carac_atual);
+        continue;
+        end if;    
+    end if;
+end if;
+
+--Se o caractere analisado anteriormente foi um ponto, vai colocar maiúsculo
+if(v_carac_anterior = ' ') then
+v_retorno := v_retorno || upper(v_carac_atual);
+else
+v_retorno := v_retorno || lower(v_carac_atual);
+end if;
+
+--Atribui o caractere já processado como sendo o anterior, para a proxima execucao. Ignora espaco.
+if(v_carac_atual is not null) then
+v_carac_anterior := v_carac_atual;
+end if;
+end loop;
+
+return v_retorno;
+
+end;

@@ -1,0 +1,86 @@
+create or replace FUNCTION  "DIARIAS_VALOR_DIARIAS_2" 
+(v_codigoDLD in number)
+return NUMBER
+is
+ 
+aux NUMBER;
+cont NUMBER;
+contadorArray number; 
+diaria number;
+retorno_valores VARCHAR2(1000);
+v_array apex_application_global.vc_arr2;
+v_array2 apex_application_global.vc_arr2;
+v_num_vetor number;
+--v_tipoPessoa number;
+ 
+VALORTOTALGERAL NUMBER;
+vauxaliment NUMBER;
+vtotal NUMBER  :=0;
+vcodigo_evento NUMBER;
+v_codigoPessoa NUMBER;
+v_tipoPessoa NUMBER;
+ 
+vr_codigo number;
+vr_diaria number;
+vr_TAXA_EMBARQUE number;
+vr_DESCONTO_ALIME number;
+vr_NUM_DIAS number;
+vr_COD_CARGO number;
+vr_GLOSA number;
+vr_VALOR_TOTAL number;
+vr_resumo VARCHAR2(1000);
+vr_TIPO_MOEDA number;
+vr_TIPO_DIARIA number;
+ 
+begin
+/*
+select dld.codigo_evento, dld.codigo_pessoa, dld.tipo_pessoa 
+into vcodigo_evento, v_codigoPessoa, v_tipoPessoa
+from diarias_lancamento_diarias dld
+where dld.codigo = v_codigoDLD;
+
+ 
+--select para valor total, VALOR_TAXA_EMBARQUE, VALOR_DESCONTO_ALIME, GLOSA no valor minimo 
+select dvr.codigo, dvr.VALOR_TOTAL, dvr.VALOR_TAXA_EMBARQUE, dvr.VALOR_DESCONTO_ALIME, dvr.glosa, dvr.tipo_diaria
+into vr_codigo, vr_VALOR_TOTAL, vr_TAXA_EMBARQUE, vr_DESCONTO_ALIME, vr_GLOSA, vr_tipo_diaria
+from DIARIAS_VALORES_REALIZADOS DVR
+where dvr.CODIGO_LANCAMENTO = v_codigoDLD
+and dvr.codigo = (select min(codigo) from DIARIAS_VALORES_REALIZADOS where CODIGO_LANCAMENTO = v_codigoDLD);
+*/
+
+VALORTOTALGERAL := 0;
+vtotal := 0;
+ 
+for w in (select num_dias, valor_diaria, VALOR_TAXA_EMBARQUE, VALOR_DESCONTO_ALIME, GLOSA, VALOR_TOTAL from DIARIAS_VALORES_REALIZADOS where CODIGO_LANCAMENTO = v_codigoDLD  and tipo_diaria <> 2 ) loop
+	
+    if w.VALOR_TAXA_EMBARQUE is null 
+		then w.VALOR_TAXA_EMBARQUE:=0;
+	end if;
+	
+	if w.VALOR_DESCONTO_ALIME is null 
+		then w.VALOR_DESCONTO_ALIME:=0; 
+	end if;
+	
+	if w.GLOSA is null 
+		then w.GLOSA:=0;
+	end if;
+    
+    
+    if (w.VALOR_TOTAL is not null and w.VALOR_TOTAL <> 0 ) then
+        VALORTOTALGERAL := VALORTOTALGERAL + w.VALOR_TOTAL;
+        --htp.p(VALORTOTALGERAL);
+
+    else 
+
+        vtotal := (w.num_dias * w.valor_diaria) + w.VALOR_TAXA_EMBARQUE - w.VALOR_DESCONTO_ALIME - w.GLOSA;
+        VALORTOTALGERAL := VALORTOTALGERAL + vtotal;
+    end if;
+
+end loop;
+ 
+ 
+--VALORTOTALGERAL := VALORTOTALGERAL + vr_TAXA_EMBARQUE - vr_DESCONTO_ALIME - vr_GLOSA;
+    
+return VALORTOTALGERAL;
+ 
+end;

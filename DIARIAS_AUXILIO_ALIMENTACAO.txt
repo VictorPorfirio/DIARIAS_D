@@ -1,0 +1,88 @@
+create or replace FUNCTION  "DIARIAS_AUXILIO_ALIMENTACAO" 
+(vdataini date, vdatafim date)
+return number
+     is
+ 
+l number :=0;
+vdatainicial date;
+vdatafinal date;
+vdia number := 0;
+vsomadiautil number :=0;
+vtotal number := 0;
+vtotalgeral number := 0;
+lista_matches clob;
+BEGIN 
+for x in(
+    
+   select valor, data_inicio, data_fim from DIARIAS_HIST_AUX_ALIMENTACAO 
+  where   (
+to_char(data_inicio,'mm/dd/yyyy') <= to_char(vdatafim,'mm/dd/yyyy') and
+ to_char(data_fim,'mm/dd/yyyy') >= to_char(vdataini,'mm/dd/yyyy')   or  
+      to_char(data_inicio,'mm/dd/yyyy') <= to_char(vdatafim,'mm/dd/yyyy') and data_fim is null
+)
+    
+)
+loop
+  -- l := l+1;
+vdatainicial:= vdataini;
+vdatafinal :=vdatafim;
+lista_matches := lista_matches|| 'Vou entrar no loop';
+lista_matches := lista_matches||'DATA INI'||  vdatainicial;
+lista_matches := lista_matches||'DATA INI'||  vdataFINAL;
+if x.data_fim is null then
+  WHILE vdatainicial <= vdatafinal
+  LOOP
+    lista_matches := lista_matches|| 'to no loop';
+  --  l:= l +1;    
+    --lista_matches := to_clob(lista_matches||'data ini efet'|| vdatainiefet);
+    --lista_matches := to_clob(lista_matches||'data fim efet'|| vdatafimefet);
+   select to_char (vdataini, 'D') into vdia from dual;
+    
+     case
+       
+        when  vdia <> '1' and  vdia <> '7' then
+            vsomadiautil := vsomadiautil + 1;
+             vtotal := vtotal +  x.valor;
+            lista_matches := lista_matches|| 'To somando dia útil'; 
+       else
+            lista_matches := lista_matches|| ' fim de semana ';          
+            
+     end  case;
+      vdatainicial := vdatainicial +1;
+    
+    lista_matches := lista_matches|| 'loop efetivo ';
+   END LOOP;
+else
+  WHILE vdatainicial <= x.data_fim 
+  LOOP
+    lista_matches := lista_matches|| 'to no loop';
+  --  l:= l +1;    
+    --lista_matches := to_clob(lista_matches||'data ini efet'|| vdatainiefet);
+    --lista_matches := to_clob(lista_matches||'data fim efet'|| vdatafimefet);
+   select to_char (vdataini, 'D') into vdia from dual;
+    
+     case
+       
+        when  vdia <> '1' and  vdia <> '7' then
+            vsomadiautil := vsomadiautil + 1;
+             vtotal := vtotal +  x.valor;
+            lista_matches := lista_matches|| 'To somando dia útil'; 
+       else
+            lista_matches := lista_matches|| ' fim de semana ';          
+            
+     end  case;
+      vdatainicial := vdatainicial +1;
+    
+    lista_matches := lista_matches|| 'loop efetivo ';
+   END LOOP;
+end if;
+vtotalgeral := vtotal;
+end loop;
+return vtotalgeral;
+--return lista_matches;
+exception
+         when others then 
+         
+         --lista_matches := lista_matches || SQLERRM;             
+         return SQLERRM ;     
+End;

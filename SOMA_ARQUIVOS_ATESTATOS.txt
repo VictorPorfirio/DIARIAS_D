@@ -1,0 +1,14 @@
+create or replace function "SOMA_ARQUIVOS_ATESTATOS"
+(cod_hist_atend in NUMBER)
+return NUMBER
+is
+
+quantidade number;
+
+begin
+
+select count(codigo) into quantidade from diarias_documento_atestacao where codigo_hist_atendimento = cod_hist_atend and codigo_tipo_arquivo = 1;
+
+return quantidade;
+
+end;

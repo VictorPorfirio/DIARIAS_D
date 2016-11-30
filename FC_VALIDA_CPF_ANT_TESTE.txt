@@ -1,0 +1,40 @@
+create or replace FUNCTION  "FC_VALIDA_CPF_ANT_TESTE" (P1_CPF IN varchar2)
+   RETURN CHAR
+IS
+   m_total    NUMBER := 0;
+   m_digito   NUMBER := 0;
+BEGIN
+   FOR i IN 1 .. 9
+   LOOP
+      m_total := m_total + to_number(SUBSTR (P1_CPF, i, 1) * (11 - i));
+   END LOOP;
+   m_digito := 11 - MOD (m_total, 11);
+   IF m_digito > 9
+   THEN
+      m_digito := 0;
+   END IF;
+   IF m_digito <> to_number(SUBSTR (P1_CPF, 10, 1))
+   THEN
+      RETURN 'F';
+   END IF;
+   m_digito := 0;
+   m_total := 0;
+   FOR i IN 1 .. 10
+   LOOP
+      m_total := m_total + to_number(SUBSTR (P1_CPF, i, 1) * (12 - i));
+   END LOOP;
+   m_digito := 11 - MOD (m_total, 11);
+   IF m_digito > 9
+   THEN
+      m_digito := 0;
+   END IF;
+   IF  INSTR(P1_CPF,3) = INSTR(P1_CPF,4) and
+       INSTR(P1_CPF,5) = INSTR(P1_CPF,4) and
+       INSTR(P1_CPF,6) = INSTR(P1_CPF,4) and
+       INSTR(P1_CPF,7) = INSTR(P1_CPF,4) and
+       INSTR(P1_CPF,8) = INSTR(P1_CPF,4)
+   THEN
+      RETURN 'F';
+   END IF;
+   RETURN 'T';   
+END fc_valida_cpf_ant_teste;

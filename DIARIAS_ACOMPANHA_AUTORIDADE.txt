@@ -1,0 +1,127 @@
+create or replace FUNCTION  "DIARIAS_ACOMPANHA_AUTORIDADE" (VCODIGO_evento in number, vcodigo_servidor in number,vcodlanc in number, vcodauto in number)
+return VARCHAR2
+ 
+     is
+ 
+CURSOR PESSOACONSULTADA IS 
+ SELECT  distinct td.descricao as Tipo,dl.codigo,dc.cargo, dl.cod_cargo, dl.codigo_pessoa,dl.data_inicio, 
+dl.data_fim, dl.cod_autoridade_acompanhada, dl.data_inicio_efetiva, dl.data_fim_efetiva , substr(dc.cargo,4,1)   as Funcao
+FROM DIARIAS_lancamento_diarias  dl, DIARIAS_TIPO_DIARIA td, diarias_cargo dc
+WHERE  
+    dl.codigo_evento = vcodigo_evento  and
+    dl.codigo_pessoa = vcodauto and
+    dc.codigo= dl.cod_cargo and
+    td.codigo = dl.cod_tipo  and 
+    
+    upper(dl.se_diaria) ='S' and
+    dl.codigo = vcodlanc ;
+ 
+ 
+PESSOACONSULTADA_CUR PESSOACONSULTADA%ROWTYPE;
+ 
+lista_matches VARCHAR(2000);
+ 
+ l number :=0;
+ a varchar2(4000);
+ vinclui  boolean:=true;
+ diaini date;
+ diafim date;
+ vdataantini date;
+ vdataantfim date;
+ vdatainievento date;
+ vdatafimevento date;
+ vdataaltini date;
+ vdataaltfim date;
+ vcodalterador  number :=0;
+ vcodalterado  number :=0;
+ fccomp number :=0;
+ fcant number :=0;
+TYPE diarias_tipo IS RECORD (
+    vcodalterador  number,
+    vfc     number :=0,
+    vdiaexclui number,
+    vdataini date,
+    vdatafim date
+  );
+  
+  
+  TYPE  vdiarias_tipo IS TABLE OF diarias_tipo
+      INDEX BY varchar2(30);
+ 
+    vdiariastipo vdiarias_tipo; 
+ 
+begin
+ 
+FOR PESSOACONSULTADA_CUR IN PESSOACONSULTADA
+LOOP
+EXIT WHEN PESSOACONSULTADA%NOTFOUND;
+DELETE FROM DIARIAS_ALTERACAO where CODIGO_LANCAMENTO_MODIFICADO = PESSOACONSULTADA_CUR.codigo;
+ diaini :=PESSOACONSULTADA_CUR.data_inicio_efetiva;
+ diafim :=PESSOACONSULTADA_CUR.data_fim_efetiva;  
+ vcodalterado  :=PESSOACONSULTADA_CUR.codigo;
+ 
+ 
+ 
+  
+--htp.p('fc:' ||fccomp);
+ end loop;
+      
+   
+ 
+ -- O LOOP ABAIXO SERÁ ÚNICO POISS  FAZ UM JOIN COM COD AUTORIDADE
+  for i in
+  (
+   SELECT dl.codigo, dl.cod_cargo,dc.cargo,
+      dl.codigo_pessoa, dl.data_inicio,dl.data_inicio_efetiva, dl.data_fim_efetiva, dl.data_fim,dl.cod_autoridade_acompanhada, dl.codigo_evento
+  FROM DIARIAS_lancamento_diarias  dl,  DIARIAS_TIPO_DIARIA td,  diarias_cargo dc
+  WHERE  
+    dl.codigo_evento = vcodigo_evento  and
+    dl.codigo_pessoa = vcodauto and
+    td.codigo = dl.cod_tipo and 
+    --upper(td.descricao) = 'NACIONAL' and
+     dc.codigo = dl.cod_cargo and
+    ( 
+    dl.data_inicio_efetiva between  diaini and diafim and
+    dl.data_fim_efetiva between  diaini and diafim 
+    OR
+     dl.data_inicio_efetiva <= diaini AND dl.data_fim_efetiva >=diafim
+    
+   )
+    --  and  
+   -- upper(trim( dc.cargo )) in ('FC-1','FC-2','FC-3','FC-4','FC-5','FC-6','AUFC','TEFC','AUCE') 
+    
+ 
+      order by  3 desc, dl.data_inicio, dl.data_fim  
+  
+     )
+    
+   loop
+   
+     select data_inicio, data_fim into vdatainievento, vdatafimevento  from
+    DIARIAS_EVENTO  where codigo =VCODIGO_evento;
+    if  vdatainievento  = i.data_inicio_efetiva  then
+         vdataaltini  := i.data_inicio_efetiva;
+	else
+	       if  vdatainievento  > i.data_inicio_efetiva  then
+		         vdataaltini := vdatainievento;
+	        end if;			 
+	end if;
+	
+	 if  vdatafimevento  = i.data_fim then
+        vdataaltfim := i.data_inicio_efetiva;
+	else
+	       if  vdatafimevento  < i.data_fim  then
+		         vdataaltini := vdatafimevento;
+	        end if;		 
+	end if;
+	
+  
+  vcodalterador :=i.codigo;
+   
+     
+end loop ;
+insert into DIARIAS_ALTERACAO(CODIGO_LANCAMENTO_MODIFICADOR,CODIGO_LANCAMENTO_MODIFICADO,DATA_INICIO,DATA_FIM) 
+ VALUES (vcodalterador,vcodalterado,vdataaltini,vdataaltfim); 
+    
+ return 'ok';
+end;

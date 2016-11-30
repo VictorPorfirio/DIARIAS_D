@@ -1,0 +1,57 @@
+create or replace function "DIAS_UTEIS"
+(evento in NUMBER, pessoa in NUMBER,vcodlanc in number)
+return NUMBER
+is
+    dias_uteis number := 0;
+    dias_total number;
+    
+    contador number;
+    vcontferiado number  :=0;
+    v_inicio_efetivo date;
+    data_aux date;
+    v_fim_efetivo date;
+    vdiaexecaco date;
+    vquantexec number;
+begin
+    SELECT DATA_INICIO_EFETIVA, DATA_FIM_EFETIVA INTO v_inicio_efetivo, v_fim_efetivo  
+    FROM diarias_lancamento_diarias WHERE codigo_pessoa = pessoa AND codigo_evento = evento and codigo =vcodlanc;
+    
+    dias_total := v_fim_efetivo-v_inicio_efetivo;
+    
+   
+    for contador in 0..dias_total loop
+        data_aux := v_inicio_efetivo;
+        
+        data_aux := data_aux + contador;
+        select  COUNT(DATA) into vcontferiado from  VW_APEX_HIST_DIAS_SEM_EXPED WHERE to_date(data,'dd/mm/yy') = to_date(data_aux,'dd/mm/yy') and sigla_uf is null and TIPO_DIA_SEM_EXPEDIENTE = 'F';
+	    
+        if(to_char(data_aux,'d') <> '1' and to_char(data_aux,'d') <> '7' and vcontferiado = 0) then
+    
+            dias_uteis := dias_uteis + 1;
+    
+        end if;
+		/*select  COUNT(DATA) into vcontferiado
+        from  VW_APEX_HIST_DIAS_SEM_EXPED 
+        WHERE
+        to_date(data,'dd/mm/yy') = to_date(data_aux,'dd/mm/yy')
+        and sigla_uf is null;
+        IF vcontferiado >0 THEN
+	      dias_uteis := dias_uteis - 1;
+		  vcontferiado :=0;
+	    end if;	  */
+	
+    end loop;
+    
+  
+    
+	
+	select  COUNT(DATA) into vcontferiado from  VW_APEX_HIST_DIAS_SEM_EXPED WHERE to_date(data,'dd/mm/yy') = to_date(v_fim_efetivo,'dd/mm/yy') and sigla_uf is null and TIPO_DIA_SEM_EXPEDIENTE = 'F' ; 
+    if(to_char(v_fim_efetivo,'d') <> '1' and to_char(v_fim_efetivo,'d') <> '7' and vcontferiado = 0) then
+    
+        dias_uteis := dias_uteis - 0.5;
+    
+    end if;
+    
+    return dias_uteis;
+
+    end;

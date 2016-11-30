@@ -1,0 +1,14 @@
+create or replace function "VERIFICA_OB"
+(cod_atendimento in NUMBER)
+return NUMBER
+is
+
+qtd number;
+
+begin
+
+    select count(*) into qtd from diarias_documento_atestacao where codigo_hist_atendimento = cod_atendimento and CODIGO_TIPO_ARQUIVO = 2;
+
+return qtd;
+
+end;
